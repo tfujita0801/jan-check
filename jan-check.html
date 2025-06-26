@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JAN照合チェック</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      text-align: center;
+      background-color: #f4f4f4;
+    }
+    input {
+      font-size: 20px;
+      padding: 10px;
+      width: 80%;
+      margin: 10px 0;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>JAN照合チェック</h2>
+  <input id="code1" type="text" placeholder="伝票のJANコード" autofocus><br>
+  <input id="code2" type="text" placeholder="商品のJANコード"><br>
+  <div id="result"></div>
+
+  <script>
+    function vibrate(pattern) {
+      if (navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    }
+
+    function checkMatch() {
+      const code1 = document.getElementById("code1").value.trim();
+      const code2 = document.getElementById("code2").value.trim();
+      const result = document.getElementById("result");
+
+      if (!code1 || !code2) {
+        result.textContent = "両方のコードを入力してください";
+        result.style.color = "black";
+        return;
+      }
+
+      if (code1 === code2) {
+        document.body.style.backgroundColor = "#d4edda";
+        result.textContent = "一致しました！";
+        result.style.color = "green";
+        vibrate([200]); // 短い振動
+      } else {
+        document.body.style.backgroundColor = "#f8d7da";
+        result.textContent = "不一致です！";
+        result.style.color = "red";
+        vibrate([300, 100, 300]); // 長めの振動
+      }
+
+      document.getElementById("code1").value = "";
+      document.getElementById("code2").value = "";
+      document.getElementById("code1").focus();
+    }
+
+    document.getElementById("code2").addEventListener("change", checkMatch);
+  </script>
+</body>
+</html>
