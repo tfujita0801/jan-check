@@ -1,0 +1,78 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JAN照合チェック（カメラ自動）</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      text-align: center;
+      background-color: #f4f4f4;
+    }
+    video {
+      width: 100%;
+      max-width: 400px;
+      margin: 20px 0;
+    }
+    #result {
+      font-size: 24px;
+      font-weight: bold;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+  <h2>JAN照合チェック（カメラ自動）</h2>
+  <video id="preview" autoplay muted playsinline></video>
+  <div id="result">カメラ起動中...</div>
+
+  <script src="https://unpkg.com/@zxing/browser@latest"></script>
+  <script>
+    const codeReader = new ZXing.BrowserBarcodeReader();
+    const videoElement = document.getElementById('preview');
+    const result = document.getElementById('result');
+
+    let lastScanned = null;
+
+    function vibrate(pattern) {
+      if (navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    }
+
+    codeReader.decodeFromVideoDevice(null, videoElement, (resultObj, err) => {
+      if (resultObj) {
+        const code = resultObj.text.trim();
+        if (!lastScanned) {
+          lastScanned = code;
+          result.textContent = `1件目スキャン: ${code}`;
+          result.style.color = "black";
+          document.body.style.backgroundColor = "#fff";
+        } else {
+          if (lastScanned === code) {
+            result.textContent = "一致しました！";
+            result.style.color = "green";
+            document.body.style.backgroundColor = "#d4edda";
+            vibrate([200]);
+          } else {
+            result.textContent = `不一致です！\n1件目: ${lastScanned}\n2件目: ${code}`;
+            result.style.color = "red";
+            document.body.style.backgroundColor = "#f8d7da";
+            vibrate([300, 100, 300]);
+          }
+          lastScanned = null;
+        }
+      } else if (err && !(err instanceof ZXing.NotFoundException)) {
+        result.textContent = "エラー: " + err;
+        result.style.color = "orange";
+      }
+    }).catch(e => {
+      result.textContent = "カメラの使用が許可されていないか、起動できませんでした。";
+      result.style.color = "red";
+    });
+  </script>
+</body>
+</html>
