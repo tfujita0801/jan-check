@@ -1,0 +1,70 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>JANコード照合 改善版</title>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; transition: background-color 0.3s; }
+    #result { font-size: 1.5em; margin-top: 1em; }
+    video { width: 100%; max-width: 400px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>JANコード照合</h1>
+  <video id="video" autoplay></video>
+  <div id="result">カメラ起動中...</div>
+  <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const videoElement = document.getElementById('video');
+    const resultElement = document.getElementById('result');
+    let firstScan = null;
+    let lastScanned = "";
+    let timeoutId = null;
+
+    function vibrate(ms) {
+      if ("vibrate" in navigator) navigator.vibrate(ms);
+    }
+
+    function resetScan() {
+      document.body.style.backgroundColor = "";
+      firstScan = null;
+      lastScanned = "";
+      resultElement.textContent = "1つ目のJANコードをスキャンしてください";
+    }
+
+    function sanitize(code) {
+      return code.replace(/[^0-9A-Z]/gi, '').trim();
+    }
+
+    codeReader.getVideoInputDevices().then(videoInputDevices => {
+      const backCamera = videoInputDevices.find(device => device.label.toLowerCase().includes('back')) || videoInputDevices[0];
+      codeReader.decodeFromVideoDevice(backCamera.deviceId, videoElement, (result, err) => {
+        if (result) {
+          const code = sanitize(result.text);
+          if (!code || code === lastScanned) return;
+          lastScanned = code;
+
+          if (!firstScan) {
+            firstScan = code;
+            resultElement.textContent = "1つ目のJANコード: " + code;
+            vibrate(100);
+          } else {
+            const match = code === firstScan;
+            resultElement.textContent = match ? "✅ 一致しました！" : `❌ 不一致です！
+1: ${firstScan} / 2: ${code}`;
+            document.body.style.backgroundColor = match ? "#ccffcc" : "#ffcccc";
+            vibrate(match ? 100 : [200, 100, 200]);
+
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(resetScan, 2000);
+          }
+        }
+      });
+    }).catch(err => {
+      resultElement.textContent = "カメラを起動できませんでした: " + err;
+    });
+  </script>
+</body>
+</html>
