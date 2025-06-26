@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>JANコード照合</title>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; }
+    #result { font-size: 1.5em; margin-top: 1em; }
+    video { width: 100%; max-width: 400px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>JANコード照合</h1>
+  <video id="video" autoplay></video>
+  <div id="result">カメラ起動中...</div>
+  <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const videoElement = document.getElementById('video');
+    const resultElement = document.getElementById('result');
+    let firstScan = null;
+    let lastScanned = "";
+
+    function vibrate(ms) {
+      if ("vibrate" in navigator) navigator.vibrate(ms);
+    }
+
+    codeReader.getVideoInputDevices().then(videoInputDevices => {
+      const backCamera = videoInputDevices.find(device => device.label.toLowerCase().includes('back')) || videoInputDevices[0];
+      codeReader.decodeFromVideoDevice(backCamera.deviceId, videoElement, (result, err) => {
+        if (result) {
+          const code = result.text.trim();
+          if (code === lastScanned) return;
+          lastScanned = code;
+          if (!firstScan) {
+            firstScan = code;
+            resultElement.textContent = "1つ目のJANコード読み取り: " + code;
+            vibrate(100);
+          } else {
+            const match = code === firstScan;
+            resultElement.textContent = match ? "✅ 一致しました！" : "❌ 一致しません！";
+            vibrate(match ? 100 : [200, 100, 200]);
+            firstScan = null;
+          }
+        }
+      });
+    }).catch(err => {
+      resultElement.textContent = "カメラを起動できませんでした: " + err;
+    });
+  </script>
+</body>
+</html>
