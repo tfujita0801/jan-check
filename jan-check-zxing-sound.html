@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JANコード照合（ZXing + 音付き）</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+      padding: 20px;
+    }
+    video {
+      width: 100%;
+      max-width: 400px;
+      margin: 20px auto;
+    }
+    #result {
+      font-size: 1.2em;
+      margin-top: 20px;
+      color: #333;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>JANコード照合（音付き）</h1>
+  <video id="video" autoplay muted playsinline></video>
+  <div id="result">カメラ起動中...</div>
+
+  <audio id="sound-ok" preload="auto" src="https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3"></audio>
+  <audio id="sound-ng" preload="auto" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
+
+  <script type="module">
+    import { BrowserMultiFormatReader } from 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.10/esm/index.min.js';
+
+    const resultEl = document.getElementById('result');
+    const soundOk = document.getElementById('sound-ok');
+    const soundNg = document.getElementById('sound-ng');
+    let firstScan = "";
+    let secondScan = "";
+
+    function vibrate(pattern) {
+      if (navigator.vibrate) navigator.vibrate(pattern);
+    }
+
+    function resetScans() {
+      firstScan = "";
+      secondScan = "";
+      resultEl.textContent = "再スキャン準備中...";
+    }
+
+    function handleScan(text) {
+      if (!firstScan) {
+        firstScan = text;
+        resultEl.textContent = "1つ目スキャン完了: " + text + "\n2つ目をスキャンしてください...";
+        vibrate(100);
+        return;
+      }
+      if (!secondScan) {
+        secondScan = text;
+        resultEl.textContent = "2つ目スキャン完了: " + text + "\n";
+
+        if (firstScan === secondScan) {
+          resultEl.textContent += "\n✅ 一致しました！";
+          soundOk.play();
+          vibrate(200);
+        } else {
+          resultEl.textContent += "\n❌ 不一致です！";
+          soundNg.play();
+          vibrate([200, 100, 200]);
+        }
+
+        setTimeout(resetScans, 3000);
+      }
+    }
+
+    const codeReader = new BrowserMultiFormatReader();
+    codeReader.listVideoInputDevices().then(videoInputDevices => {
+      const selectedDeviceId = videoInputDevices.find(device => device.label.toLowerCase().includes("back"))?.deviceId || videoInputDevices[0].deviceId;
+
+      codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+        if (result) {
+          handleScan(result.getText());
+        }
+      });
+    }).catch(err => {
+      resultEl.textContent = "カメラ初期化エラー: " + err;
+    });
+  </script>
+</body>
+</html>
