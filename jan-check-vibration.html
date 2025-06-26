@@ -1,0 +1,102 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JAN照合チェッカー（バイブ対応）</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    h1 {
+      font-size: 1.5em;
+    }
+    #video {
+      width: 100%;
+      max-width: 400px;
+      border: 1px solid #ccc;
+      margin-bottom: 20px;
+    }
+    #status {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>JANコード照合チェッカー</h1>
+  <video id="video" autoplay playsinline></video>
+  <div id="status">カメラ起動中...</div>
+
+  <script src="https://unpkg.com/@zxing/library@0.18.6"></script>
+  <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const videoElement = document.getElementById('video');
+    const status = document.getElementById('status');
+
+    let jan1 = null;
+    let scanning = true;
+    let lastScanTime = 0;
+
+    function vibrate(pattern) {
+      if (navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    }
+
+    function playBeep(match) {
+      const audio = new Audio(match ? 'https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg' : 'https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg');
+      audio.play().catch(() => {});
+    }
+
+    function showResult(match) {
+      status.textContent = match ? '✅ 一致しました！' : '❌ 一致しません';
+      document.body.style.backgroundColor = match ? '#c8f7c5' : '#f7c5c5';
+      vibrate(match ? 200 : [100, 100, 100]);
+      playBeep(match);
+    }
+
+    function reset() {
+      jan1 = null;
+      status.textContent = '次のJANコードをスキャンしてください';
+      document.body.style.backgroundColor = '#f0f0f0';
+    }
+
+    function startScanner() {
+      codeReader.decodeFromVideoDevice(
+        { facingMode: 'environment' },
+        videoElement,
+        (result, err) => {
+          if (!scanning) return;
+
+          const now = Date.now();
+          if (now - lastScanTime < 2000) return;
+          if (result) {
+            const text = result.getText();
+            lastScanTime = now;
+            if (!jan1) {
+              jan1 = text;
+              status.textContent = `1つ目のJAN: ${jan1}`;
+            } else {
+              scanning = false;
+              const match = jan1 === text;
+              showResult(match);
+              setTimeout(() => {
+                scanning = true;
+                reset();
+              }, 2000);
+            }
+          }
+        }
+      );
+    }
+
+    startScanner();
+  </script>
+</body>
+</html>
