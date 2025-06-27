@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>JAN照合Webアプリ（検証済み）</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin: 0; padding: 1em; }
+    video { width: 100%; max-width: 400px; margin-top: 20px; border: 1px solid #ddd; }
+    #status { font-size: 1.5em; margin-top: 10px; }
+    .ok { background: #c8f7c5; }
+    .ng { background: #ffc5c5; }
+  </style>
+</head>
+<body>
+  <h2>JANコード照合</h2>
+  <video id="video" autoplay playsinline muted></video>
+  <div id="status">スキャン待機中...</div>
+  <script type="module">
+    import { BrowserBarcodeReader } from 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/esm/index.min.js';
+    const reader = new BrowserBarcodeReader();
+    const video = document.getElementById('video');
+    const status = document.getElementById('status');
+    let first = null, busy = false;
+
+    function vibrate(p) { if (navigator.vibrate) navigator.vibrate(p); }
+    function setStatus(text, ok) {
+      status.textContent = text;
+      status.className = ok ? 'ok' : 'ng';
+    }
+
+    reader.listVideoInputDevices().then(devices => {
+      const cameraId = devices.length > 1 ? devices[1].deviceId : devices[0].deviceId;
+      reader.decodeFromVideoDevice(cameraId, video, (res, err) => {
+        if (busy || err || !res) return;
+        busy = true;
+        const code = res.text;
+        if (!first) {
+          first = code;
+          setStatus('2回目のJANコードをスキャンしてください', true);
+          vibrate(100);
+          setTimeout(() => { busy = false; }, 2000);
+        } else {
+          const match = code === first;
+          setStatus(match ? '✅ 一致しました！' : '❌ 一致しません！', match);
+          vibrate(match ? [200] : [200,100,200]);
+          setTimeout(() => {
+            first = null;
+            setStatus('スキャン待機中...', false);
+            busy = false;
+          }, 2000);
+        }
+      });
+    }).catch(() => setStatus("カメラにアクセスできません", false));
+  </script>
+</body>
+</html>
+
