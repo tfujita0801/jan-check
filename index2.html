@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>JANコード照合（音声付き）</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; transition: background-color .3s; }
+    #inputArea { margin-top: 2em; }
+    input { font-size: 1.5em; padding: 0.5em; width: 80%; max-width: 400px; }
+    #result { font-size: 1.5em; margin-top: 1em; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>JANコード照合</h1>
+  <div id="inputArea">
+    <input id="barcodeInput" placeholder="バーコードをスキャン" autofocus>
+  </div>
+  <div id="result">1つ目のJANコードをスキャンしてください</div>
+  <audio id="soundMatch" src="match.mp3"></audio>
+  <audio id="soundMismatch" src="mismatch.mp3"></audio>
+  <script>
+    const input = document.getElementById('barcodeInput');
+    const result = document.getElementById('result');
+    const soundMatch = document.getElementById('soundMatch');
+    const soundMismatch = document.getElementById('soundMismatch');
+
+    let first = null;
+    let scanStep = 0;
+
+    function reset() {
+      document.body.style.backgroundColor = "";
+      first = null;
+      scanStep = 0;
+      result.textContent = "1つ目のJANコードをスキャンしてください";
+      input.value = "";
+    }
+
+    input.addEventListener('input', () => {
+      const code = input.value.trim();
+      if (!code) return;
+
+      if (scanStep === 0) {
+        first = code;
+        result.textContent = "1つ目: " + code + "\n2つ目のJANコードをスキャンしてください";
+        document.body.style.backgroundColor = "#ffffcc";
+        scanStep = 1;
+        input.value = "";
+      } else if (scanStep === 1) {
+        const second = code;
+        if (second === first) {
+          result.textContent = "✅ 一致！\n" + second;
+          document.body.style.backgroundColor = "#ccffcc";
+          soundMatch.play();
+        } else {
+          result.textContent = "❌ 不一致！\n1: " + first + " / 2: " + second;
+          document.body.style.backgroundColor = "#ffcccc";
+          soundMismatch.play();
+        }
+        scanStep = 2;
+        input.value = "";
+        setTimeout(reset, 3000);
+      }
+    });
+  </script>
+</body>
+</html>
