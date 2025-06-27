@@ -1,0 +1,83 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>JANコード照合（スキャナー用）</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; transition: background-color .3s; }
+    input { font-size: 2em; padding: 0.5em; width: 80%; max-width: 400px; }
+    #result { font-size: 1.5em; margin-top: 1em; }
+  </style>
+</head>
+<body>
+  <h1>JANコード照合（スキャナー用）</h1>
+  <input id="barcodeInput" autocomplete="off" autofocus />
+  <div id="result">1つ目のJANコードをスキャンしてください</div>
+
+  <!-- 音声 -->
+  <audio id="meowSound" src="meow.mp3"></audio>
+  <audio id="matchSound" src="match.mp3"></audio>
+  <audio id="mismatchSound" src="mismatch.mp3"></audio>
+
+  <script>
+    const input = document.getElementById('barcodeInput');
+    const result = document.getElementById('result');
+    const meow = document.getElementById('meowSound');
+    const match = document.getElementById('matchSound');
+    const mismatch = document.getElementById('mismatchSound');
+
+    let firstCode = null;
+    let scanStep = 0;
+    let canScan = true;
+
+    function reset() {
+      scanStep = 0;
+      firstCode = null;
+      canScan = true;
+      result.textContent = '1つ目のJANコードをスキャンしてください';
+      document.body.style.backgroundColor = '';
+      input.value = '';
+      input.focus();
+    }
+
+    input.addEventListener('input', () => {
+      if (!canScan) return;
+
+      const code = input.value.trim();
+      if (code.length < 13) return; // JANコード13桁前提
+
+      canScan = false;
+
+      if (scanStep === 0) {
+        firstCode = code;
+        result.textContent = '1つ目: ' + code;
+        document.body.style.backgroundColor = '#ffffcc';
+        meow.play();
+        scanStep = 1;
+        input.value = '';
+        setTimeout(() => { canScan = true; input.focus(); }, 1500);
+      } else if (scanStep === 1) {
+        const secondCode = code;
+        if (secondCode === firstCode) {
+          result.textContent = '✅ 一致: ' + secondCode;
+          document.body.style.backgroundColor = '#ccffcc';
+          match.play();
+        } else {
+          result.textContent = '❌ 不一致\n1: ' + firstCode + '\n2: ' + secondCode;
+          document.body.style.backgroundColor = '#ffcccc';
+          mismatch.play();
+        }
+        scanStep = 2;
+        input.value = '';
+        setTimeout(reset, 2500);
+      }
+    });
+
+    // 初期フォーカス
+    window.onload = () => {
+      input.focus();
+    };
+  </script>
+</body>
+</html>
