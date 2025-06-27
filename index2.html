@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JANコード照合</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; }
+    #result { font-size: 2em; margin: 1em 0; }
+    input { font-size: 1.2em; padding: 0.5em; }
+  </style>
+</head>
+<body>
+  <h1>JANコード照合</h1>
+  <p>スキャナーでバーコードを読み取ってください</p>
+  <input id="scanner" autofocus placeholder="ここにバーコードが表示されます" />
+  <div id="result">待機中...</div>
+
+  <script>
+    const validJANs = ["4901234567894", "9781234567897", "4521234567892"];
+    const input = document.getElementById("scanner");
+    const result = document.getElementById("result");
+
+    const matchSound = new Audio("match.mp3");
+    const mismatchSound = new Audio("mismatch.mp3");
+
+    input.addEventListener("input", () => {
+      const code = input.value.trim();
+      if (code.length >= 8) {
+        if (validJANs.includes(code)) {
+          result.textContent = "✅ 一致: " + code;
+          result.style.color = "green";
+          matchSound.play();
+        } else {
+          result.textContent = "❌ 不一致: " + code;
+          result.style.color = "red";
+          mismatchSound.play();
+        }
+        input.value = "";
+      }
+    });
+  </script>
+</body>
+</html>
