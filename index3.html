@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>JANコード照合</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; transition: background-color .3s; }
+    #result { font-size: 1.5em; margin-top: 1em; }
+    input { font-size: 1.5em; padding: 0.5em; width: 80%; max-width: 400px; }
+  </style>
+</head>
+<body>
+  <h1>JANコード照合</h1>
+  <input id="scanner" placeholder="スキャンしてください" autofocus />
+  <div id="result">1つ目のJANコードをスキャンしてください</div>
+
+  <audio id="beep" src="beep.mp3"></audio>
+  <audio id="match" src="match.mp3"></audio>
+  <audio id="mismatch" src="mismatch.mp3"></audio>
+
+  <script>
+    const input = document.getElementById('scanner');
+    const result = document.getElementById('result');
+    const beepSound = document.getElementById('beep');
+    const matchSound = document.getElementById('match');
+    const mismatchSound = document.getElementById('mismatch');
+
+    let firstCode = null;
+    let waiting = false;
+
+    function reset() {
+      firstCode = null;
+      result.textContent = "1つ目のJANコードをスキャンしてください";
+      document.body.style.backgroundColor = "";
+    }
+
+    input.addEventListener('input', () => {
+      if (waiting) return;
+      const code = input.value.trim();
+      if (code.length < 8) return;
+
+      input.value = "";
+      waiting = true;
+
+      if (!firstCode) {
+        firstCode = code;
+        beepSound.play();
+        result.textContent = "1つ目: " + code;
+        document.body.style.backgroundColor = "#ffffcc";
+        setTimeout(() => waiting = false, 1000);
+      } else {
+        if (code === firstCode) {
+          result.textContent = "✅ 一致！
+" + code;
+          document.body.style.backgroundColor = "#ccffcc";
+          matchSound.play();
+        } else {
+          result.textContent = "❌ 不一致！
+1:" + firstCode + " / 2:" + code;
+          document.body.style.backgroundColor = "#ffcccc";
+          mismatchSound.play();
+        }
+        setTimeout(() => {
+          reset();
+          waiting = false;
+        }, 2000);
+      }
+    });
+  </script>
+</body>
+</html>
