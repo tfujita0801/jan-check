@@ -1,83 +1,64 @@
-
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>JANコード照合（スキャナー用）</title>
+  <title>JANコード照合</title>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 2em; transition: background-color .3s; }
-    input { font-size: 2em; padding: 0.5em; width: 80%; max-width: 400px; }
+    input { font-size: 1.5em; padding: 0.5em; width: 80%; max-width: 400px; }
     #result { font-size: 1.5em; margin-top: 1em; }
   </style>
 </head>
 <body>
-  <h1>JANコード照合（スキャナー用）</h1>
-  <input id="barcodeInput" autocomplete="off" autofocus />
-  <div id="result">1つ目のJANコードをスキャンしてください</div>
+  <h1>JANコード照合</h1>
+  <input id="scanInput" placeholder="ここにJANコードを読み取ってください" autofocus />
+  <div id="result">1つ目のJANコードを読み取ってください</div>
 
-  <!-- 音声 -->
-  <audio id="meowSound" src="meow.mp3"></audio>
-  <audio id="matchSound" src="match.mp3"></audio>
-  <audio id="mismatchSound" src="mismatch.mp3"></audio>
+  <audio id="beep" src="beep.mp3"></audio>
+  <audio id="meow" src="meow.mp3"></audio>
+  <audio id="bark" src="bark.mp3"></audio>
 
   <script>
-    const input = document.getElementById('barcodeInput');
+    const input = document.getElementById('scanInput');
     const result = document.getElementById('result');
-    const meow = document.getElementById('meowSound');
-    const match = document.getElementById('matchSound');
-    const mismatch = document.getElementById('mismatchSound');
+    const beep = document.getElementById('beep');
+    const meow = document.getElementById('meow');
+    const bark = document.getElementById('bark');
 
-    let firstCode = null;
-    let scanStep = 0;
-    let canScan = true;
-
-    function reset() {
-      scanStep = 0;
-      firstCode = null;
-      canScan = true;
-      result.textContent = '1つ目のJANコードをスキャンしてください';
-      document.body.style.backgroundColor = '';
-      input.value = '';
-      input.focus();
-    }
+    let first = null, step = 0;
 
     input.addEventListener('input', () => {
-      if (!canScan) return;
-
       const code = input.value.trim();
-      if (code.length < 13) return; // JANコード13桁前提
+      if (code.length < 13) return;
 
-      canScan = false;
-
-      if (scanStep === 0) {
-        firstCode = code;
-        result.textContent = '1つ目: ' + code;
-        document.body.style.backgroundColor = '#ffffcc';
-        meow.play();
-        scanStep = 1;
+      if (step === 0) {
+        first = code;
+        result.textContent = "1つ目: " + first;
+        document.body.style.backgroundColor = "#ffffcc";
+        beep.play();
+        step = 1;
         input.value = '';
-        setTimeout(() => { canScan = true; input.focus(); }, 1500);
-      } else if (scanStep === 1) {
-        const secondCode = code;
-        if (secondCode === firstCode) {
-          result.textContent = '✅ 一致: ' + secondCode;
-          document.body.style.backgroundColor = '#ccffcc';
-          match.play();
+      } else {
+        const second = code;
+        if (second === first) {
+          result.textContent = "✅ 一致！\n" + second;
+          document.body.style.backgroundColor = "#ccffcc";
+          meow.play();
         } else {
-          result.textContent = '❌ 不一致\n1: ' + firstCode + '\n2: ' + secondCode;
-          document.body.style.backgroundColor = '#ffcccc';
-          mismatch.play();
+          result.textContent = "❌ 不一致！\n1:" + first + " / 2:" + second;
+          document.body.style.backgroundColor = "#ffcccc";
+          bark.play();
         }
-        scanStep = 2;
+        step = 2;
         input.value = '';
-        setTimeout(reset, 2500);
+        setTimeout(() => {
+          first = null;
+          step = 0;
+          result.textContent = "1つ目のJANコードを読み取ってください";
+          document.body.style.backgroundColor = "";
+        }, 3000);
       }
     });
-
-    // 初期フォーカス
-    window.onload = () => {
-      input.focus();
-    };
   </script>
 </body>
 </html>
