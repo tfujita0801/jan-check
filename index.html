@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>JANコード照合</title>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; transition: background-color .3s; }
+    video { width: 100%; max-width: 400px; border: 1px solid #ccc; }
+    #result { font-size: 1.5em; margin-top: 1em; }
+    #startButton { padding: 1em 2em; font-size: 1.2em; margin-top: 2em; }
+  </style>
+</head>
+<body>
+  <h1>JANコード照合</h1>
+  <video id="video" autoplay muted playsinline></video>
+  <div id="result">画面をタップして開始してください</div>
+  <button id="startButton">スキャンを開始</button>
+  <script>
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    const video = document.getElementById('video');
+    const result = document.getElementById('result');
+    const startButton = document.getElementById('startButton');
+    let first = null;
+    let scanStep = 0;
+    let scanning = false;
+    let canScan = true;
+
+    function vibrate(ms) {
+      if (navigator.vibrate) navigator.vibrate(ms);
+    }
+
+    function playBeep(type) {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+
+      if (type === 'success') {
+        o.frequency.value = 880;
+        g.gain.setValueAtTime(0.1, ctx.currentTime);
+        o.start();
+        o.stop(ctx.currentTime + 0.4);
+      } else if (type === 'fail') {
+        o.frequency.value = 220;
+        g.gain.setValueAtTime(0.1, ctx.currentTime);
+        o.start();
+        o.stop(ctx.currentTime + 0.2);
+        setTimeout(() => {
+          const o2 = ctx.createOscillator();
+          const g2 = ctx.createGain();
+          o2.connect(g2);
+          g2.connect(ctx.destination);
+          o2.frequency.value = 220;
+          g2.gain.setValueAtTime(0.1, ctx.currentTime);
+          o2.start();
+          o2.stop(ctx.currentTime + 0.2);
+        }, 300);
+      } else {
+        o.frequency.value = 440;
+        g.gain.setValueAtTime(0.05, ctx.currentTime);
+        o.start();
+        o.stop(ctx.currentTime + 0.15);
+      }
+    }
+
+    function reset() {
+      document.body.style.backgroundColor = "";
+      first = null;
+      scanStep = 0;
+      canScan = true;
+      result.textContent = "1つ目のJANコードをスキャンしてください";
+    }
+
+    function startScan() {
+      scanning = true;
+      startButton.style.display = "none";
+      result.textContent = "カメラ起動中...";
+
+      codeReader.getVideoInputDevices().then(devices => {
+        const back = devices.find(d => d.label.toLowerCase().includes('back')) || devices[0];
+        codeReader.decodeFromVideoDevice(back.deviceId, video, (res, err) => {
+          if (!scanning || !canScan) return;
+          if (res) {
+            const code = res.text.trim();
+            canScan = false;
+
+            if (scanStep === 0) {
+              first = code;
+              result.textContent = "1つ目: " + code;
+              document.body.style.backgroundColor = "#ffffcc";
+              vibrate(200);
+              playBeep('scan');
+              scanStep = 1;
+              setTimeout(() => { canScan = true; }, 2000);
+            } else if (scanStep === 1) {
+              const match = (code === first);
+              if (match) {
+                result.textContent = "✅ 一致！\n" + code;
+                document.body.style.backgroundColor = "#ccffcc";
+                vibrate(200);
+                playBeep('success');
+              } else {
+                result.textContent = "❌ 不一致！\n1:" + first + " / 2:" + code;
+                document.body.style.backgroundColor = "#ffcccc";
+                vibrate([200, 100, 200]);
+                playBeep('fail');
+              }
+              scanStep = 2;
+              setTimeout(reset, 2000);
+            }
+          }
+        });
+      }).catch(e => {
+        result.textContent = "カメラ起動エラー: " + e;
+      });
+    }
+
+    startButton.addEventListener('click', () => {
+      if (!scanning) startScan();
+    });
+  </script>
+</body>
+</html>
